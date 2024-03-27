@@ -1,7 +1,8 @@
-from flask import Flask, render_template, redirect
+from flask import Flask, render_template, redirect, make_response, jsonify
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
+from flask_restful import Api
 
-from data import db_session
+from data import db_session, job_resources, user_resources
 from data.jobs import Job
 from data.users import User
 from forms.job import AddJobForm, EditJobForm
@@ -11,6 +12,17 @@ app = Flask(__name__)
 login_manager = LoginManager()
 login_manager.init_app(app)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
+api = Api(app, catch_all_404s=True)
+
+
+@app.errorhandler(404)
+def not_found(error):
+    return make_response(jsonify({'error': 'Not found'}), 404)
+
+
+@app.errorhandler(400)
+def bad_request(_):
+    return make_response(jsonify({'error': 'Bad Request'}), 400)
 
 
 @login_manager.user_loader
@@ -71,7 +83,7 @@ def index():
         jobs = db_sess.query(Job).filter((Job.team_leader == current_user.id) | (Job.is_finished != True))
     else:
         jobs = db_sess.query(Job).filter(Job.is_finished != True)
-    return render_template("index.html", jobs=jobs)
+    return render_template("index.html", title='Mars Jobs', jobs=jobs)
 
 
 @app.route('/jobs', methods=['GET', 'POST'])
@@ -114,6 +126,10 @@ def delete_job(id):
 
 def main():
     db_session.global_init('db/mars.db')
+    api.add_resource(job_resources.JobListResource, '/api/jobs')
+    api.add_resource(job_resources.JobResource, '/api/jobs/<int:job_id>')
+    api.add_resource(user_resources.UserListResource, '/api/users')
+    api.add_resource(user_resources.UserResource, '/api/users/<int:user_id>')
     app.run()
 
 
