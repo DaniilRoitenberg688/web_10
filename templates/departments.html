@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+<meta charset="UTF-8">
+<h2 align="center">Works log</h2>
+
+{% if current_user.is_authenticated %}
+<div>
+    <a class="btn btn-secondary" href="/">Return to jobs</a>
+    <a class="btn btn-secondary" href="departments_add">Add department</a>
+</div>
+{% endif %}
+{% for dep in deps %}
+<h3>Action # {{ dep.id }}</h3>
+<div class="table_container">
+    <table class="my_table">
+        <tr class="my_row">
+            <td bgcolor="#dddddd" class="title" width="400px">Title</td>
+            <td bgcolor="#dddddd" class="title" width="150px">Chief</td>
+            <td align="center" bgcolor="#dddddd" class="title" width="200px">Members</td>
+            <td align="center" bgcolor="#dddddd" class="title" width="100px">Email</td>
+        </tr>
+        <tr class="my_row">
+            <td bgcolor="#eeeeff" class="ordinary">{{ dep.title.capitalize() }}</td>
+            <td bgcolor="#eeeeff" class="ordinary">{{ dep.chief }}</td>
+            <td align="center" bgcolor="#eeeeff" class="ordinary">{{ dep.members }}</td>
+            <td align="center" bgcolor="#eeeeff" class="ordinary">{{ dep.email }}</td>
+        </tr>
+
+    </table>
+</div>
+
+{% if current_user.is_authenticated and current_user.id == dep.chief %}
+<div>
+    <a class="btn btn-warning" href="/departments/{{ dep.id }}">Изменить</a>
+    <a class="btn btn-danger" href="/departments_delete/{{ dep.id }}">Удалить</a>
+</div>
+{% endif %}
+
+<br>
+{% endfor %}
+
+{% endblock %}

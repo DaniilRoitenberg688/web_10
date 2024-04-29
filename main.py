@@ -1,5 +1,5 @@
 from flask import Flask, render_template, redirect, make_response, jsonify
-from flask_login import LoginManager, login_user, login_required, logout_user, current_user
+from flask_login import LoginManager, login_user, login_required, logout_user
 from flask_restful import Api
 
 from data import db_session, job_resources, user_resources
@@ -7,6 +7,8 @@ from data.jobs import Job
 from data.users import User
 from forms.job import AddJobForm, EditJobForm
 from forms.user import RegisterForm, LoginForm
+from data.departments import Department
+from forms.department import DepForm
 
 app = Flask(__name__)
 login_manager = LoginManager()
@@ -79,11 +81,10 @@ def logout():
 @app.route("/")
 def index():
     db_sess = db_session.create_session()
-    if current_user.is_authenticated:
-        jobs = db_sess.query(Job).filter((Job.team_leader == current_user.id) | (Job.is_finished != True))
-    else:
-        jobs = db_sess.query(Job).filter(Job.is_finished != True)
-    return render_template("index.html", title='Mars Jobs', jobs=jobs)
+
+    jobs = db_sess.query(Job).all()
+
+    return render_template("jobs.html", title='Mars Jobs', jobs=jobs)
 
 
 @app.route('/jobs', methods=['GET', 'POST'])
@@ -122,6 +123,55 @@ def delete_job(id):
     db_sess.query(Job).filter(Job.id == id).delete()
     db_sess.commit()
     return redirect('/')
+
+
+@app.route('/departments', methods=['GET', 'POST'])
+def departments():
+    sess = db_session.create_session()
+    deps = sess.query(Department).all()
+
+    return render_template("departments.html", title='Departments', deps=deps)
+
+
+@app.route('/departments_add', methods=['GET', 'POST'])
+def add_department():
+    form = DepForm()
+    if form.validate_on_submit():
+        dep = Department(title=form.title.data,
+                         chief=form.chief.data,
+                         members=form.members.data,
+                         email=form.email.data)
+
+        sess = db_session.create_session()
+        sess.merge(dep)
+        sess.commit()
+        return redirect('/departments')
+    return render_template('add_dep.html', title='Add new', form=form)
+
+
+@app.route('/departments_delete/<id>', methods=['GET', 'POST'])
+def delete(id):
+    sess = db_session.create_session()
+    dep = sess.query(Department).get(id)
+    sess.delete(dep)
+    sess.commit()
+    return redirect('/departments')
+
+
+@app.route('/departments/<id>', methods=['GET', 'POST'])
+def edit(id):
+    form = DepForm()
+    if form.validate_on_submit():
+        sess = db_session.create_session()
+        dep = sess.query(Department).get(id)
+        dep.title = form.title.data
+        dep.chief = form.chief.data
+        dep.email = form.email.data
+        dep.members = form.members.data
+        sess.commit()
+        return redirect('/departments')
+    return render_template('add_dep.html', form=form, title='edit dep')
+
 
 
 def main():
